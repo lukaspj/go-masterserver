@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-100;
+  @apply font-sans;
+  @apply leading-normal tracking-normal;
+}
+
+.main-container {
+  @apply container w-full mx-auto pt-20 lg:pt-28;
+
+  >.divider {
+    @apply border-b-2 border-gray-400 my-8 mx-4;
+  }
+
+  >.row {
+    @apply flex flex-row flex-wrap flex-grow;
+  }
+
+  .card {
+    @apply bg-white border rounded shadow;
+    >.title {
+      @apply border-b p-3;
+
+      @apply font-bold uppercase text-gray-600;
+    }
+  }
+}
+
+/* 100vh on safari does not include the bottom bar. */
+@supports (-webkit-overflow-scrolling: touch) {
+  .main-container {
+    height: 85vh;
+  }
+}
+
+#root {
+  padding: 40px 20px;
+  max-width: 600px;
+  margin: auto;
+  height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#root > * + * {
+  margin: 20px 0 0 0;
+}
+
+/* 100vh on safari does not include the bottom bar. */
+@supports (-webkit-overflow-scrolling: touch) {
+  #root {
+    height: 85vh;
+  }
+}
+
+#message-log {
+  width: 100%;
+  flex-grow: 1;
+  overflow: auto;
+}
+
+#message-log p:first-child {
+  margin: 0;
+}
+
+#message-log > * + * {
+  margin: 10px 0 0 0;
+}
+
+#publish-form-container {
+  width: 100%;
+}
+
+#publish-form {
+  width: 100%;
+  display: flex;
+  height: 40px;
+}
+
+#publish-form > * + * {
+  margin: 0 0 0 10px;
+}
+
+#publish-form input[type="text"] {
+  flex-grow: 1;
+
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  word-break: normal;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+#publish-form input[type="submit"] {
+  color: white;
+  background-color: black;
+  border-radius: 5px;
+  padding: 5px 10px;
+  border: none;
+}
+
+#publish-form input[type="submit"]:hover {
+  background-color: red;
+}
+
+#publish-form input[type="submit"]:active {
+  background-color: red;
+}

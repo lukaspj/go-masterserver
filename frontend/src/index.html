@@ -1,0 +1,79 @@
+<html lang="en-CA" xmlns:x-bind="http://www.w3.org/1999/xhtml" xmlns:x-on="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8"/>
+    <title>nhooyr.io/websocket - Chat Example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" src="index.ts" defer></script>
+</head>
+<body>
+<include src="src/components/header.html"></include>
+<div x-data="{}" class="main-container">
+    <div class="row">
+        <div class="w-full md:w-1/2 p-3">
+            <!--Template Card-->
+            <div class="card">
+                <div class="title">
+                    <h5>Create Lobby</h5>
+                </div>
+                <div class="p-5">
+                    <input type="text" class="" x-model="lobbyInput.name">
+                    <button x-on:click="await createLobby()"
+                            class="rounded bg-blue-500 p-5 text-white text-center hover:bg-blue-600">Create Lobby</button>
+                </div>
+            </div>
+            <!--/Template Card-->
+        </div>
+    </div>
+
+    <div class="w-full p-3">
+        <!--Table Card-->
+        <div class="card">
+            <div class="title">
+                <h5>Lobbies</h5>
+            </div>
+            <div class="p-5">
+                <table x-data="lobbies" class="w-full p-5 text-gray-700">
+                    <thead>
+                    <tr>
+                        <th class="text-left text-blue-900">UUID</th>
+                        <th class="text-left text-blue-900">Name</th>
+                        <th class="text-left text-blue-900">Subscribers</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <template x-for="lobby in lobbies">
+                        <tr>
+                            <td>
+                                <a x-bind:href="`/pages/lobby.html?lobbyId=${lobby.Id}`">
+                                    <span x-text="lobby.Id"></span>
+                                </a>
+                            </td>
+                            <td>
+                                <a x-bind:href="`/pages/lobby.html?lobbyId=${lobby.Name}`">
+                                    <span x-text="lobby.Name"></span>
+                                </a>
+                            </td>
+                            <td>
+                                <a x-bind:href="`/pages/lobby.html?lobbyId=${lobby.Subscribers}`">
+                                    <span x-text="lobby.Subscribers"></span>
+                                </a>
+                            </td>
+                            <td>
+                                <button
+                                        x-on:click="deleteLobby(lobby.Id)"
+                                        class="bg-red-500 hover:bg-red-600 text-white text-center px-5 py-1 rounded"
+                                >Delete</button>
+                            </td>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!--/table Card-->
+    </div>
+</div>
+</body>
+</html>

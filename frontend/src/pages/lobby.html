@@ -1,0 +1,37 @@
+<html lang="en-CA">
+<head>
+    <meta charset="UTF-8"/>
+    <title>nhooyr.io/websocket - Chat Example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" src="lobby.ts" defer></script>
+</head>
+<body class="h-screen">
+<include src="src/components/header.html"></include>
+
+<div class="main-container h-full">
+    <div class="max-w-2xl m-auto h-full p-3">
+        <!--Table Card-->
+        <div x-data="lobbyConnection" class="card h-full flex flex-col">
+            <div class="title">
+                <h5 x-text="lobbyConnection.name || lobbyConnection.id">Lobby</h5>
+            </div>
+            <div class="flex-grow overflow-auto p-5">
+                <template x-for="log in lobbyConnection.logMessages">
+                    <p x-text="`${log.time.toLocaleTimeString()}: ${log.message}`"
+                       :style="log.error && { color: 'red', fontWeight: 'bold' }"></p>
+                </template>
+            </div>
+            <div class="w-full px-10 py-5">
+                <form id="tmp-publish-form" class="w-full h-10 flex">
+                    <input name="message" id="tmp-message-input" type="text"
+                        class="flex-grow break-normal rounded-md border border-gray-300 px-2"/>
+                    <input value="Submit" type="submit"
+                        class="hover:bg-red-500 text-white bg-black rounded-md py-1 px-2.5 ml-2.5 text-center"/>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
