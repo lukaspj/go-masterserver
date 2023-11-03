@@ -30,6 +30,7 @@ async function createLobby() {
     let lobbyConnection = new LobbyConnection('', lobbyInput.name);
     await lobbyConnection.create();
     await ListLobbies();
+    lobbyInput.name = '';
 }
 
 async function deleteLobby(id: string) {

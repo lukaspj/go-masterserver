@@ -107,7 +107,10 @@ func NewInMemoryMessageStream() *InMemoryMessageStream {
 	go func() {
 		for {
 			select {
-			case msg := <-messageStream.input:
+			case msg, ok := <-messageStream.input:
+				if !ok {
+					return
+				}
 
 				messageStream.subscribersMu.Lock()
 
@@ -124,6 +127,7 @@ func NewInMemoryMessageStream() *InMemoryMessageStream {
 				}
 
 				messageStream.subscribersMu.Unlock()
+				break
 			}
 		}
 	}()

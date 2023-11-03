@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -17,9 +18,9 @@ type Server struct {
 	LobbyService *lobby.Service
 }
 
-func NewServer() *Server {
+func NewServer(service *lobby.Service) *Server {
 	return &Server{
-		LobbyService: lobby.NewService(),
+		LobbyService: service,
 	}
 }
 
@@ -44,6 +45,18 @@ func (s *Server) ListenAndServe() error {
 	return http.ListenAndServe(":3000", r)
 }
 
+type SocketConnection struct {
+	conn *websocket.Conn
+}
+
+func (sc SocketConnection) WriteMessage(ctx context.Context, message lobby.Message) error {
+	bytes, err := json.Marshal(message)
+	if err != nil {
+		return err
+	}
+	return sc.conn.Write(ctx, websocket.MessageText, bytes)
+}
+
 func (s *Server) subscribeHandler(w http.ResponseWriter, r *http.Request) {
 	lobbyId := chi.URLParam(r, "lobbyId")
 
@@ -54,7 +67,8 @@ func (s *Server) subscribeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close(websocket.StatusInternalError, "")
 
-	err = s.LobbyService.Subscribe(lobbyId, r.Context(), conn)
+	ctx := conn.CloseRead(r.Context())
+	err = s.LobbyService.Subscribe(ctx, lobbyId, SocketConnection{conn})
 	if errors.Is(err, context.Canceled) {
 		return
 	}

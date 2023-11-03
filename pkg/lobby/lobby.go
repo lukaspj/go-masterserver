@@ -2,13 +2,10 @@ package lobby
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"time"
 
 	"golang.org/x/time/rate"
-
-	"nhooyr.io/websocket"
 )
 
 type Lobby struct {
@@ -43,6 +40,10 @@ func NewService() *Service {
 	return cs
 }
 
+type Connection interface {
+	WriteMessage(ctx context.Context, msg Message) error
+}
+
 // Subscribe subscribes the given WebSocket to all broadcast messages.
 // It creates a subscriber with a buffered msgs chan to give some room to slower
 // connections and then registers the subscriber. It then listens for all messages
@@ -51,8 +52,7 @@ func NewService() *Service {
 //
 // It uses CloseRead to keep reading from the connection to process control
 // messages and cancel the context if the connection drops.
-func (ls *Service) Subscribe(id string, ctx context.Context, conn *websocket.Conn) error {
-	ctx = conn.CloseRead(ctx)
+func (ls *Service) Subscribe(ctx context.Context, id string, conn Connection) error {
 	messageStream, err := ls.repo.GetMessageStream(id)
 	if err != nil {
 		return err
@@ -62,23 +62,22 @@ func (ls *Service) Subscribe(id string, ctx context.Context, conn *websocket.Con
 
 	messageChan := messageStream.Subscribe(ctx)
 
-	bytes, err := json.Marshal(Message{
+	msg := Message{
 		Type: MetaMessageType,
 		Meta: MetaMessage{
 			Name:        lobby.Name,
 			Id:          lobby.Id,
 			Subscribers: messageStream.SubscriberCount(),
 		},
-	})
+	}
 
-	writeTimeout(ctx, time.Second*5, conn, bytes)
+	writeTimeout(ctx, time.Second*5, conn, msg)
 
-	for msg := range messageChan {
-		bytes, err = json.Marshal(msg)
+	for msg = range messageChan {
 		if err != nil {
 			return err
 		}
-		err = writeTimeout(ctx, time.Second*5, conn, bytes)
+		err = writeTimeout(ctx, time.Second*5, conn, msg)
 		if err != nil {
 			return err
 		}
@@ -143,9 +142,9 @@ func (ls *Service) List(context.Context) ([]Lobby, error) {
 	return lobbies, nil
 }
 
-func writeTimeout(ctx context.Context, timeout time.Duration, c *websocket.Conn, msg []byte) error {
+func writeTimeout(ctx context.Context, timeout time.Duration, c Connection, msg Message) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	return c.Write(ctx, websocket.MessageText, msg)
+	return c.WriteMessage(ctx, msg)
 }
