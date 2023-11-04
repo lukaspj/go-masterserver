@@ -15,6 +15,17 @@ import (
 	"github.com/rivo/tview"
 )
 
+func readString(buf *bytes.Buffer) (string, error) {
+	readByte, err := buf.ReadByte()
+	if err != nil {
+		return "", err
+	}
+
+	strBuffer := make([]byte, readByte)
+	_, err = buf.Read(strBuffer)
+	return string(strBuffer), err
+}
+
 func main() {
 	conn, err := net.Dial("tcp", ":3001")
 	if err != nil {
@@ -171,12 +182,13 @@ func main() {
 
 				messageReader := bytes.NewBuffer(message[:len(message)-1])
 				for messageReader.Len() > 0 {
-					id, err := messageReader.ReadString(0x0)
+
+					id, err := readString(messageReader)
 					if err != nil {
 						logPrintf("-->: %+v\n", err)
 						break
 					}
-					name, err := messageReader.ReadString(0x0)
+					name, err := readString(messageReader)
 					if err != nil {
 						logPrintf("-->: %+v\n", err)
 						break
@@ -199,7 +211,7 @@ func main() {
 			} else if tcp.TCP_RESPONSE(message[0]) == tcp.LOBBY_CREATED {
 				messageReader := bytes.NewBuffer(message)
 				logPrintf("-->: MESSAGE SIZE: %d\n", messageReader.Len())
-				id, err := messageReader.ReadString(0x0)
+				id, err := readString(messageReader)
 				if err != nil {
 					logPrintf("-->: %+v\n", err)
 					break
@@ -208,7 +220,7 @@ func main() {
 				messageReader.Next(1)
 			} else if tcp.TCP_RESPONSE(message[0]) == tcp.LOBBY_MESSAGE {
 				messageReader := bytes.NewBuffer(message[1:])
-				msgType, err := messageReader.ReadString(0x0)
+				msgType, err := readString(messageReader)
 				if err != nil {
 					logPrintf("-->: %+v\n", err)
 					break
@@ -221,19 +233,19 @@ func main() {
 						logPrintf("-->: %+v\n", err)
 						break
 					}
-					msg, err := messageReader.ReadString(0x0)
+					msg, err := readString(messageReader)
 					if err != nil {
 						logPrintf("-->: %+v\n", err)
 						break
 					}
 					logPrintf("->: <text> %s - %s\n", t, msg)
 				} else if msgType == "meta" {
-					metaId, err := messageReader.ReadString(0x0)
+					metaId, err := readString(messageReader)
 					if err != nil {
 						logPrintf("-->: %+v\n", err)
 						break
 					}
-					metaName, err := messageReader.ReadString(0x0)
+					metaName, err := readString(messageReader)
 					if err != nil {
 						logPrintf("-->: %+v\n", err)
 						break

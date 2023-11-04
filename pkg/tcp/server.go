@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/lukaspj/go-masterserver/pkg/lobby"
 	"log"
+	"math"
 	"net"
 	"strings"
 )
@@ -44,6 +45,7 @@ type Subscriber struct {
 	Conn         net.Conn
 	LobbyService *lobby.Service
 	byteOrder    binary.ByteOrder
+	maxStrLength int
 	lobbyId      string
 }
 
@@ -113,16 +115,26 @@ func (s *Subscriber) listLobbies(ctx context.Context) error {
 	}
 
 	for _, l := range list {
-		err = binary.Write(resp, s.byteOrder, []byte(l.Id))
-		err = binary.Write(resp, s.byteOrder, byte(0x0))
-		err = binary.Write(resp, s.byteOrder, []byte(l.Name))
-		err = binary.Write(resp, s.byteOrder, byte(0x0))
+		err = s.writeString(resp, l.Id)
+		if err != nil {
+			return err
+		}
+		err = s.writeString(resp, l.Name)
+		if err != nil {
+			return err
+		}
 		timeBytes, err := l.Created.MarshalBinary()
 		if err != nil {
 			return err
 		}
 		err = binary.Write(resp, s.byteOrder, timeBytes)
+		if err != nil {
+			return err
+		}
 		err = binary.Write(resp, s.byteOrder, uint32(l.Subscribers))
+		if err != nil {
+			return err
+		}
 	}
 
 	err = binary.Write(resp, s.byteOrder, byte('\t'))
@@ -153,11 +165,7 @@ func (s *Subscriber) createLobby(ctx context.Context, data []byte) error {
 		return err
 	}
 
-	err = binary.Write(resp, s.byteOrder, []byte(lobbyId))
-	if err != nil {
-		return err
-	}
-	err = binary.Write(resp, s.byteOrder, byte(0x0))
+	err = s.writeString(resp, lobbyId)
 	if err != nil {
 		return err
 	}
@@ -197,11 +205,7 @@ func (s *Subscriber) WriteMessage(ctx context.Context, msg lobby.Message) error 
 		return err
 	}
 
-	_, err = resp.Write([]byte(msg.Type))
-	if err != nil {
-		return err
-	}
-	err = binary.Write(resp, s.byteOrder, byte(0x0))
+	err = s.writeString(resp, string(msg.Type))
 	if err != nil {
 		return err
 	}
@@ -216,20 +220,17 @@ func (s *Subscriber) WriteMessage(ctx context.Context, msg lobby.Message) error 
 		if err != nil {
 			return err
 		}
-		err = binary.Write(resp, s.byteOrder, []byte(msg.Text.Content))
-		err = binary.Write(resp, s.byteOrder, byte(0x0))
+		err = s.writeString(resp, msg.Text.Content)
 		if err != nil {
 			return err
 		}
 		break
 	case lobby.MetaMessageType:
-		err = binary.Write(resp, s.byteOrder, []byte(msg.Meta.Id))
-		err = binary.Write(resp, s.byteOrder, byte(0x0))
+		err = s.writeString(resp, msg.Meta.Id)
 		if err != nil {
 			return err
 		}
-		err = binary.Write(resp, s.byteOrder, []byte(msg.Meta.Name))
-		err = binary.Write(resp, s.byteOrder, byte(0x0))
+		err = s.writeString(resp, msg.Meta.Name)
 		if err != nil {
 			return err
 		}
@@ -258,7 +259,22 @@ func (s *Subscriber) sendMessage(ctx context.Context, data []byte) error {
 	return nil
 }
 
+func (s *Subscriber) writeString(buf *bytes.Buffer, str string) error {
+	if len(str) > s.maxStrLength {
+		return fmt.Errorf("invalid input: String was too long to write")
+	}
+
+	err := binary.Write(buf, s.byteOrder, byte(len(str)))
+	if err != nil {
+		return err
+	}
+
+	return binary.Write(buf, s.byteOrder, []byte(str))
+}
+
 func (s *Server) subscribe(ctx context.Context, conn net.Conn, service *lobby.Service) {
-	sub := &Subscriber{conn, service, binary.LittleEndian, ""}
+	// Size of a byte (8 bits) which is all we allocate when writing the string length
+	maxStrLen := int(math.Pow(2, 8))
+	sub := &Subscriber{conn, service, binary.LittleEndian, maxStrLen, ""}
 	go sub.Listen(ctx)
 }
